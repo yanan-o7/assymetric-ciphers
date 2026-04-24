@@ -1,10 +1,10 @@
 import socket
 import random
+from utils import xor_decrypt, xor_encrypt
 
 HOST = '127.0.0.1'
-PORT = 5000
+PORT = 5001
 
-# параметры (для учебы маленькие)
 p = 23
 g = 5
 
@@ -14,22 +14,20 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen()
 
-    print("[SERVER] Waiting for connection...")
+    print("[SERVER] Waiting...")
     conn, addr = s.accept()
 
     with conn:
-        print(f"[SERVER] Connected: {addr}")
-
-        # получаем A от клиента
-        data = conn.recv(1024).decode()
-        A = int(data)
-
-        # считаем B
+        A = int(conn.recv(1024).decode())
         B = pow(g, server_secret, p)
-
-        # отправляем B
         conn.send(str(B).encode())
 
-        # вычисляем общий секрет
         K = pow(A, server_secret, p)
-        print(f"[SERVER] Shared key: {K}")
+
+        encrypted = conn.recv(1024)
+        message = xor_decrypt(encrypted, K)
+
+        print(f"[SERVER] Received: {message}")
+
+        response = "OK"
+        conn.send(xor_encrypt(response, K))
